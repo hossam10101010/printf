@@ -1,54 +1,67 @@
 #include "main.h"
+
+void print_buffer(char buffer[], int *buff_ind);
+
 /**
-* _printf - a custom function alternative to printf
-* ap: list of variadic arguments
-* @format: string of variadic arguments
-* Return: return number of printed characters
-*/
-
-
+ * _printf - Printf function
+ * @format: format.
+ * Return: Printed chars.
+ */
 int _printf(const char *format, ...)
 {
-	va_list ap;
-	int count = 0;
-	int i = 0;
-	const char validspec[] = "diouxXfsbpc%";
+	int i, printed = 0, printed_chars = 0;
+	int flags, width, precision, size, buff_ind = 0;
+	va_list list;
+	char buffer[BUFF_SIZE];
 
-	va_start(ap, format);
-	while (format[i] != '\0')
+	if (format == NULL)
+		return (-1);
+
+	va_start(list, format);
+
+	for (i = 0; format && format[i] != '\0'; i++)
 	{
-		if (format == NULL || (format == "%" || format == "%\0"))
-		return (0);
-		if (format[i] == '%')
+		if (format[i] != '%')
 		{
-			if (format[i + 1] == ' ')
-			return (0);
-			if (format[i + 1] != '\0')
-			{
-				int valid_spec = 0;
-				unsigned int j = 0;
-
-				for (j = 0; j < sizeof(validspec); j++)
-				{
-					if (format[i + 1] == validspec[j])
-					{
-						valid_spec = 1;
-						break;
-					}
-				}
-				if (valid_spec)
-				{
-					count += handle_format(format[i + 1], ap);
-					i++;
-				}
-				else
-				count += write(1, &format[i], 1);
-			}
+			buffer[buff_ind++] = format[i];
+			if (buff_ind == BUFF_SIZE)
+				print_buffer(buffer, &buff_ind);
+			/* write(1, &format[i], 1);*/
+			printed_chars++;
 		}
 		else
-		count += write(1, &format[i], 1);
-		i++;
+		{
+			print_buffer(buffer, &buff_ind);
+			flags = get_flags(format, &i);
+			width = get_width(format, &i, list);
+			precision = get_precision(format, &i, list);
+			size = get_size(format, &i);
+			++i;
+			printed = handle_print(format, &i, list, buffer,
+				flags, width, precision, size);
+			if (printed == -1)
+				return (-1);
+			printed_chars += printed;
+		}
 	}
-	va_end(ap);
-	return (count);
+
+	print_buffer(buffer, &buff_ind);
+
+	va_end(list);
+
+	return (printed_chars);
 }
+
+/**
+ * print_buffer - Prints the contents of the buffer if it exist
+ * @buffer: Array of chars
+ * @buff_ind: Index at which to add next char, represents the length.
+ */
+void print_buffer(char buffer[], int *buff_ind)
+{
+	if (*buff_ind > 0)
+		write(1, &buffer[0], *buff_ind);
+
+	*buff_ind = 0;
+}
+
