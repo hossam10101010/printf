@@ -1,77 +1,54 @@
 #include "main.h"
-
-void print_buffer(char b[], int *buffer_index);
-
 /**
- * _printf - Custom implementation of the printf function.
- *
- * @format: A format string containing format specifiers.
- *
- * Return: The total number of characters printed.
- */
+* _printf - a custom function alternative to printf
+* ap: list of variadic arguments
+* @format: string of variadic arguments
+* Return: return number of printed characters
+*/
+
 
 int _printf(const char *format, ...)
 {
-    /* Initialize variables.*/
-	int i;
-    int printed = 0;
-    int printed_chars = 0;
-	int f; /* flags */
-    int w; /* width */
-    int p; /* precision */
-    int s; /*size */
-    int buffer_index = 0; 
-	va_list list;
-	char b[BUFFER_SIZE ]; /* Initialize a character buffer to store output.*/
+	va_list ap;
+	int count = 0;
+	int i = 0;
+	const char validspec[] = "diouxXfsbpc%";
 
-	if (format == NULL)
-		return (-1); /* Check if the format string is NULL.*/
-
-	va_start(list, format); /* Start the variable argument list. */
-
-	for (i = 0; format && format[i] != '\0'; i++)
+	va_start(ap, format);
+	while (format[i] != '\0')
 	{
-		if (format[i] != '%') /* If the current character is not '%': */
+		if (format == NULL || (format == "%" || format == "%\0"))
+		return (0);
+		if (format[i] == '%')
 		{
-			b[buffer_index++] = format[i]; /* Store the character in the buffer.*/
-			if (buffer_index == BUFFER_SIZE) /* If the buffer is full:*/
-				print_buffer(b, &buffer_index); /* Print the buffer contents.*/
-			printed_chars++; /* Increment the count of printed characters.*/
+			if (format[i + 1] == ' ')
+			return (0);
+			if (format[i + 1] != '\0')
+			{
+				int valid_spec = 0;
+				unsigned int j = 0;
+
+				for (j = 0; j < sizeof(validspec); j++)
+				{
+					if (format[i + 1] == validspec[j])
+					{
+						valid_spec = 1;
+						break;
+					}
+				}
+				if (valid_spec)
+				{
+					count += handle_format(format[i + 1], ap);
+					i++;
+				}
+				else
+				count += write(1, &format[i], 1);
+			}
 		}
-		else /* If the current character is '%':*/
-		{
-			print_buffer(b, &buffer_index); /* Print the buffer contents.*/
-			f = extract_flags(format, &i); /* Extract flags.*/
-			w = extract_width(format, &i, list); /* Extract width.*/
-			p = extract_precision(format, &i, list); /* Extract precision.*/
-			s = extract_size(format, &i); /* Extract size specifier.*/
-			++i; /* Move to the next character after '%'.*/
-			printed = handle_print(format, &i, list, b,
-				f, w, p, s); /* Handle printing based on format specifier.*/
-			if (printed == -1) /* Check for errors.*/
-				return (-1);
-			printed_chars += printed; /* Increment the count of printed characters.*/
-		}
+		else
+		count += write(1, &format[i], 1);
+		i++;
 	}
-
-	print_buffer(b, &buffer_index); /* Print any remaining characters in the buffer.*/
-
-	va_end(list); /* End the variable argument list.*/
-
-	return (printed_chars); /* Return the total count of printed characters.*/
-}
-
-/**
- * print_buffer - Outputs the buffered characters if any exist.
- *
- * @b: Buffer containing an array of characters.
- * @buffer_index: Index at which to add the next character, indicating the buffer length.
- */
-
-void print_buffer(char b[], int *buffer_index)
-{
-	if (*buffer_index > 0)
-		write(1, &b[0], *buffer_index); /* Write the buffer contents to standard output.*/
-
-	*buffer_index = 0; /* Reset the buffer index to 0.*/
+	va_end(ap);
+	return (count);
 }
